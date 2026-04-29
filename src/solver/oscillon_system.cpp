@@ -458,7 +458,11 @@ void OscillonSystem::computeResidual(
                     }
                 }
 
-                // (b) Origin (rho=0): Dirichlet BC to background
+                // (b) Origin (rho=0): BC enforcement
+                // Metric fields: Dirichlet to background (coordinate regularity)
+                // Scalar field:
+                //   ell >= 1: Dirichlet to background (phi_hat ~ rho^ell -> 0)
+                //   ell == 0: Neumann (d_rho phi_hat = 0, regularity of spherical mode)
                 if (n == n_origin_) {
                     double rho = rhoGrid(n);
                     double theta = thetaGrid(j);
@@ -466,8 +470,14 @@ void OscillonSystem::computeResidual(
                         // Skip if already set by (a)
                         if (!isTimeParity_even(A) && (m == 0 || m == N_t_))
                             continue;
-                        R[stateIdx(A, m, si)] =
-                            u[stateIdx(A, m, si)] - backgroundValue(A, rho, theta);
+                        if (A == FLD_SCALAR && params_.ell == 0) {
+                            // Neumann BC: d_rho(phi_hat) = 0 at origin
+                            R[stateIdx(A, m, si)] = W(A, D_DR)[m * nS + si];
+                        } else {
+                            // Dirichlet BC: phi_hat = background
+                            R[stateIdx(A, m, si)] =
+                                u[stateIdx(A, m, si)] - backgroundValue(A, rho, theta);
+                        }
                     }
                     continue; // skip PDE residual at origin
                 }
