@@ -267,56 +267,74 @@ PhysicalObservables computeObservables(
         }
 
     // --- Time-averaged scalar energy ---
-    // E = (1/T) ∫_0^T dt ∫ ρ_E √γ dρ dθ dφ
-    // where ρ_E = ½(Pi² + γ^{ij}∂_iφ∂_jφ + m²φ²)
+    // On the AdS₄ background, the time-averaged energy of a scalar field
+    // φ(t,r,θ) = Φ(r,θ)cos(ωt) is (using the virial relation for the
+    // linear mode, valid to leading order):
     //
-    // For a Fourier cosine series in time, the time average of f(t)
-    // with period T = 2π/ω is:
-    //   <f> = (1/T) ∫_0^T f dt = a_0 (the DC Fourier coefficient)
+    //   E = ω² ∫ φ² / (1+r²) · r²sinθ/√(1+r²) dr dθ dφ   (time-averaged)
+    //     = (ω²/2) ∫ Φ² / (1+r²) · r²sinθ/√(1+r²) dr dθ dφ
     //
-    // We approximate the time average as a simple mean over collocation points
-    // weighted by trapezoid rule weights on [0, π/N_t] with period π.
+    // This is the ω²·I term from the analytic calculation. It equals the
+    // full energy E₂ε² at leading order because the virial relation gives
+    // gradient energy = kinetic energy - mass term, so total = 2·kinetic - mass
+    // = 2·(ω²/2)·I - m²·I = (ω² - m²)·I + ω²·I... no, let's be precise.
     //
-    // We use the φ² contribution as a proxy (avoids needing spatial derivatives):
-    // E_approx ~ ∫ m² φ² √γ dV, time-averaged
-
-    double m_sq = params.Delta * (params.Delta - 3.0);
+    // Actually, for a general (possibly nonlinear) time-periodic solution,
+    // compute the full T₀₀ integral:
+    //   E = ∫ T₀₀/N · √γ d³x, time-averaged
+    //     = (1/2) ∫ [(∂ₜφ)²/N² + (1+r²)(∂ᵣφ)² + (∂θφ)²/r² + m²φ²]
+    //              · r²sinθ/√(1+r²) dr dθ dφ, time-averaged
+    //
+    // For φ periodic in t, <(∂ₜφ)²> = ω²<φ²> at leading order.
+    // Including ω²<φ²>/N² gives the full kinetic contribution, and at
+    // leading order the virial relation ensures:
+    //   E = ω² ∫ φ²/(1+r²) · r²sinθ/√(1+r²) dr dθ dφ
+    //
+    // Beyond leading order, this underestimates the energy because it
+    // misses the nonlinear metric corrections. But it's correct to O(ε²)
+    // and gives the right scaling.
+    //
+    // Converting to compactified coordinates: r = 2ρ/(1-ρ²), dr = 2(1+ρ²)/(1-ρ²)² dρ
+    //   1+r² = (1+ρ²)²/(1-ρ²)²
+    //   r² = 4ρ²/(1-ρ²)²
+    //   √(1+r²) = (1+ρ²)/(1-ρ²)
+    //   φ = φ̂ · Ω^{Δ/2} where Ω = (1-ρ²)/(1+ρ²)
+    //
+    // The integrand in compactified coords:
+    //   φ²/(1+r²) · r²sinθ/√(1+r²) · dr
+    //   = φ̂²·Ω^Δ · (1-ρ²)²/(1+ρ²)² · 4ρ²/(1-ρ²)² · sinθ · (1-ρ²)/(1+ρ²) · 2(1+ρ²)/(1-ρ²)² dρ
+    //   = φ̂²·Ω^Δ · 8ρ²sinθ/(1+ρ²)² · 1/(1-ρ²) dρ
+    //
+    // With Ω = (1-ρ²)/(1+ρ²):
+    //   Ω^Δ/(1+ρ²)² · 1/(1-ρ²) = (1-ρ²)^{Δ-1} / (1+ρ²)^{Δ+2}
 
     // Trapezoid weights in time
     std::vector<double> t_weights(nT);
-    double dt = PI / params.N_t;
+    double dt_val = PI / params.N_t;
     for (int m = 0; m < nT; m++) {
-        t_weights[m] = dt;
+        t_weights[m] = dt_val;
         if (m == 0 || m == params.N_t) t_weights[m] *= 0.5;
     }
     double T_period = PI; // half-period (symmetry)
-    for (auto& w : t_weights) w /= T_period;
-
-    // Spatial quadrature: Gauss-Lobatto weights for Chebyshev, Gauss weights for Legendre
-    // For simplicity, use trapezoid rule in ρ with the collocation point spacing
-    // and Legendre Gauss weights for θ.
-    // Note: the collocation grid is NOT equally spaced (Chebyshev nodes), so
-    // we weight by the spacing between midpoints of adjacent intervals.
-
-    // Actually, for a proper integral, we should use the Chebyshev quadrature weights.
-    // But for a quick diagnostic, let's integrate φ² over the grid with simple weights.
-
-    // Use Clenshaw-Curtis-style quadrature: for function sampled at Chebyshev nodes,
-    // the integral is ∑ w_k f(x_k) where w_k are Clenshaw-Curtis weights.
-    // For now, approximate with midpoint spacing.
+    for (auto& tw : t_weights) tw /= T_period;
 
     for (int m = 0; m < nT; m++) {
         for (int nn = 0; nn < nR; nn++) {
             double rho = sys.rhoGrid(nn);
-            double Om = (1.0 - rho*rho) / (1.0 + rho*rho);
+            double rho2 = rho * rho;
+            double opr2 = 1.0 + rho2;  // 1 + ρ²
+            double omr2 = 1.0 - rho2;  // 1 - ρ²
 
-            // Physical metric volume element: √γ = (2/(1-ρ²))³ ρ² sin θ
-            // (from the background metric; perturbations are O(ε²))
-            double onemr2 = 1.0 - rho*rho;
-            double sqg_radial = (onemr2 > 1e-20) ?
-                8.0 * rho * rho / (onemr2 * onemr2 * onemr2) : 0.0;
+            // Skip boundary (ρ=1 where Ω=0, φ=0)
+            if (std::abs(omr2) < 1e-14) continue;
 
-            // Radial weight (crude: spacing to next point)
+            // Radial part of integrand (without φ̂² and sinθ):
+            // 8ρ² · (1-ρ²)^{Δ-1} / (1+ρ²)^{Δ+2}
+            double radial_factor = 8.0 * rho2
+                * std::pow(omr2, params.Delta - 1.0)
+                / std::pow(opr2, params.Delta + 2.0);
+
+            // Radial quadrature weight (midpoint rule on Chebyshev nodes)
             double dr_weight = 0.0;
             if (nn > 0 && nn < nR - 1) {
                 dr_weight = 0.5 * std::abs(sys.rhoGrid(nn+1) - sys.rhoGrid(nn-1));
@@ -330,16 +348,14 @@ PhysicalObservables computeObservables(
                 double theta = sys.thetaGrid(j);
                 double sth = std::sin(theta);
 
-                // Angular weight (Legendre Gauss weight × sin θ is implicit in quadrature)
-                // For now, use uniform angular weight ≈ Δθ
-                double dtheta_weight = PI / nA; // rough
+                double dtheta_weight = PI / nA; // rough angular weight
 
                 int si = nn * nA + j;
                 double phi_hat = u[sys.stateIdx(FLD_SCALAR, m, si)];
-                double phi_phys = phi_hat * std::pow(Om, params.Delta / 2.0);
 
-                double dV = sqg_radial * sth * dr_weight * dtheta_weight * 2.0 * PI;
-                obs.E_scalar += t_weights[m] * m_sq * phi_phys * phi_phys * dV;
+                // Integrand: ω² · φ̂² · radial_factor · sinθ · dρ · dθ · 2π (azimuthal)
+                double dV = radial_factor * sth * dr_weight * dtheta_weight * 2.0 * PI;
+                obs.E_scalar += t_weights[m] * omega * omega * phi_hat * phi_hat * dV;
             }
         }
     }
