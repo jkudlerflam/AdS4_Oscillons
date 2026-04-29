@@ -1,0 +1,1 @@
+/usr/bin/c++  -v -Wl,-v CMakeFiles/cmTC_92cce.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_92cce

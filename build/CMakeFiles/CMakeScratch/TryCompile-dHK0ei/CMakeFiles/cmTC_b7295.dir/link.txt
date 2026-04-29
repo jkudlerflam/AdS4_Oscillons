@@ -1,0 +1,1 @@
+/usr/bin/c++  -fopenmp -v CMakeFiles/cmTC_b7295.dir/OpenMPTryFlag.cpp.o -o cmTC_b7295

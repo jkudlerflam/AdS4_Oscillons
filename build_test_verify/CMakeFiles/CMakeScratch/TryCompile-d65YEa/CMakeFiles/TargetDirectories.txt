@@ -1,0 +1,3 @@
+/sessions/optimistic-determined-sagan/mnt/N Averaging/AdS4_Oscillons/build_test_verify/CMakeFiles/CMakeScratch/TryCompile-d65YEa/CMakeFiles/cmTC_fb3bf.dir
+/sessions/optimistic-determined-sagan/mnt/N Averaging/AdS4_Oscillons/build_test_verify/CMakeFiles/CMakeScratch/TryCompile-d65YEa/CMakeFiles/edit_cache.dir
+/sessions/optimistic-determined-sagan/mnt/N Averaging/AdS4_Oscillons/build_test_verify/CMakeFiles/CMakeScratch/TryCompile-d65YEa/CMakeFiles/rebuild_cache.dir
