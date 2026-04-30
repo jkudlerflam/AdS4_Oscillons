@@ -175,10 +175,11 @@ static int runBranch(const Config& cfg) {
     cont.dw_min = 1e-5;
     cont.dw_max = 0.1;
     cont.w_max = cfg.w_max;
+    cont.residual_max = cfg.residual_max;
     cont.newton = makeNewtonParams(cfg);
     cont.verbose = !cfg.quiet;
     cont.store_solutions = false; // no need to store — we compute diagnostics in the callback
-    cont.max_branch_points = 10000;
+    cont.max_branch_points = cfg.max_branch_points;
 
     // Open CSV file for incremental writing
     std::string outfile = cfg.output;
@@ -292,7 +293,7 @@ static int runArclength(const Config& cfg) {
     ap.newton = makeNewtonParams(cfg);
     ap.max_branch_points = cfg.max_branch_points;
     ap.residual_max = cfg.residual_max;
-    ap.stop_after_fold = true;
+    ap.stop_after_fold = false;
     ap.points_after_fold = cfg.points_after_fold;
     ap.verbose = !cfg.quiet;
     ap.store_solutions = false;
