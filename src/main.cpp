@@ -62,6 +62,7 @@ struct Config {
     double eps_start = 0.01;
     double eps_second = 0.02;  // second bootstrap amplitude for arclength
     double w_max = 1000.0;
+    double dw_initial = 0.002;
     double ds_initial = 0.01;  // arclength step
     double ds_min = 1e-7;
     double ds_max = 0.5;
@@ -109,6 +110,7 @@ static Config parseArgs(int argc, char** argv) {
             else if (arg == "--ds_min") cfg.ds_min = atof(val.c_str());
             else if (arg == "--ds_max") cfg.ds_max = atof(val.c_str());
             else if (arg == "--tol") cfg.tol = atof(val.c_str());
+            else if (arg == "--dw_initial") cfg.dw_initial = atof(val.c_str());
             else if (arg == "--residual_max") cfg.residual_max = atof(val.c_str());
             else if (arg == "--max_iter") cfg.max_iter = atoi(val.c_str());
             else if (arg == "--max_branch_points") cfg.max_branch_points = atoi(val.c_str());
@@ -171,7 +173,7 @@ static int runBranch(const Config& cfg) {
 
     solver::ContinuationParams cont;
     cont.eps_start = cfg.eps_start;
-    cont.dw_initial = 0.002;
+    cont.dw_initial = cfg.dw_initial;
     cont.dw_min = 1e-5;
     cont.dw_max = 0.1;
     cont.w_max = cfg.w_max;
