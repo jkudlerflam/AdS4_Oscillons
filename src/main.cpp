@@ -202,7 +202,7 @@ static int runBranch(const Config& cfg) {
     fprintf(csv, "# N_nuc=%d, N_shell=%d, N_theta=%d, N_t=%d\n",
             cfg.N_nuc, cfg.N_shell, cfg.N_theta, cfg.N_t);
     fprintf(csv, "index,w,omega,residual,newton_iters,"
-                 "E_scalar,phi_max,max_trK,max_evol,dNhat_dr\n");
+                 "E_scalar,phi_max,max_trK,max_evol,dNhat_dr,M_ADM\n");
     fflush(csv);
 
     // Checkpoint filename (same base as CSV but .ckpt)
@@ -219,13 +219,14 @@ static int runBranch(const Config& cfg) {
                         const double* u, const solver::OscillonSystem& sys) {
         auto report = diagnostics::fullDiagnostics(sys, u, bp.omega);
         fprintf(csv, "%d,%.15e,%.15e,%.6e,%d,"
-                     "%.15e,%.15e,%.6e,%.6e,%.15e\n",
+                     "%.15e,%.15e,%.6e,%.6e,%.15e,%.15e\n",
                 idx, bp.w, bp.omega, bp.residual, bp.newton_iters,
                 report.observables.E_scalar,
                 report.observables.phi_max,
                 report.constraints.max_trK,
                 report.constraints.max_evol_res,
-                report.observables.dNhat_dr_boundary);
+                report.observables.dNhat_dr_boundary,
+                report.observables.M_ADM);
         fflush(csv);  // flush after every row so data survives timeout
 
         // Save checkpoint (overwrite each time — only need the latest)
@@ -319,7 +320,7 @@ static int runArclength(const Config& cfg) {
     fprintf(csv, "# N_nuc=%d, N_shell=%d, N_theta=%d, N_t=%d\n",
             cfg.N_nuc, cfg.N_shell, cfg.N_theta, cfg.N_t);
     fprintf(csv, "index,w,omega,residual,newton_iters,"
-                 "E_scalar,phi_max,max_trK,max_evol,dNhat_dr\n");
+                 "E_scalar,phi_max,max_trK,max_evol,dNhat_dr,M_ADM\n");
     fflush(csv);
 
     // Checkpoint filenames
@@ -340,13 +341,14 @@ static int runArclength(const Config& cfg) {
                         const double* u, const solver::OscillonSystem& sys) {
         auto report = diagnostics::fullDiagnostics(sys, u, bp.omega);
         fprintf(csv, "%d,%.15e,%.15e,%.6e,%d,"
-                     "%.15e,%.15e,%.6e,%.6e,%.15e\n",
+                     "%.15e,%.15e,%.6e,%.6e,%.15e,%.15e\n",
                 idx, bp.w, bp.omega, bp.residual, bp.newton_iters,
                 report.observables.E_scalar,
                 report.observables.phi_max,
                 report.constraints.max_trK,
                 report.constraints.max_evol_res,
-                report.observables.dNhat_dr_boundary);
+                report.observables.dNhat_dr_boundary,
+                report.observables.M_ADM);
         fflush(csv);
 
         // Update checkpoint state

@@ -85,8 +85,10 @@ public:
     void getFieldOnGrid(const double* u, int fieldIdx,
                         std::vector<double>& values) const;
 
-    // ---- Access to params ----
+    // ---- Access to params and internals ----
     const OscillonParams& params() const { return params_; }
+    const spectral::TwoDomainChebyshev& radial() const { return radial_; }
+    int boundaryIndex() const { return n_boundary_; }
 
 private:
     OscillonParams params_;

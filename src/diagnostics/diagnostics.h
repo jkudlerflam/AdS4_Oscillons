@@ -93,17 +93,21 @@ struct PhysicalObservables {
     // Max scalar field value |phi| over the domain
     double phi_max;
 
-    // Boundary data: d_rho(N_hat)|_{rho=1} (AMD mass proxy)
-    // The true AMD mass requires careful holographic renormalization;
-    // this proxy tracks the leading boundary correction.
+    // Boundary data: d_rho(N_hat)|_{rho=1} (crude finite-difference proxy)
     double dNhat_dr_boundary;
+
+    // AMD mass: M = -(4π/3) × <d³N̂/dρ³>_θ at ρ=1
+    // Computed via spectral (Chebyshev) differentiation — spectrally accurate.
+    // In units where 8πG=1, L=1. Hawking-Page mass = 8π ≈ 25.13.
+    double M_ADM;
 
     void print(const char* prefix = "") const {
         printf("%sPhysical observables:\n", prefix);
         printf("%s  omega = %.10f, w = %.6e\n", prefix, omega, w);
         printf("%s  E_scalar = %.6e, phi_max = %.6e\n",
                prefix, E_scalar, phi_max);
-        printf("%s  dNhat_dr|_{rho=1} = %.6e (AMD proxy)\n",
+        printf("%s  M_ADM = %.6e (8πG=1, M_HP=25.13)\n", prefix, M_ADM);
+        printf("%s  dNhat_dr|_{rho=1} = %.6e (crude proxy)\n",
                prefix, dNhat_dr_boundary);
     }
 };
