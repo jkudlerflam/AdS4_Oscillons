@@ -62,7 +62,9 @@ struct Config {
     double eps_start = 0.01;
     double eps_second = 0.02;  // second bootstrap amplitude for arclength
     double w_max = 1000.0;
+    double rho_mid = 0.5;     // nucleus/shell interface
     double dw_initial = 0.002;
+    double dw_min = 1e-5;      // minimum step size for branch mode
     double ds_initial = 0.01;  // arclength step
     double ds_min = 1e-7;
     double ds_max = 0.5;
@@ -71,6 +73,8 @@ struct Config {
     int max_iter = 15;
     int max_branch_points = 2000;
     int points_after_fold = 20;
+    int stag_window = 3;       // stagnation detection window
+    double stag_ratio = 0.99;  // stagnation ratio threshold
     std::string output;
     std::string restart;    // checkpoint file to resume from
     bool verbose = false;
@@ -110,11 +114,15 @@ static Config parseArgs(int argc, char** argv) {
             else if (arg == "--ds_min") cfg.ds_min = atof(val.c_str());
             else if (arg == "--ds_max") cfg.ds_max = atof(val.c_str());
             else if (arg == "--tol") cfg.tol = atof(val.c_str());
+            else if (arg == "--rho_mid") cfg.rho_mid = atof(val.c_str());
             else if (arg == "--dw_initial") cfg.dw_initial = atof(val.c_str());
+            else if (arg == "--dw_min") cfg.dw_min = atof(val.c_str());
             else if (arg == "--residual_max") cfg.residual_max = atof(val.c_str());
             else if (arg == "--max_iter") cfg.max_iter = atoi(val.c_str());
             else if (arg == "--max_branch_points") cfg.max_branch_points = atoi(val.c_str());
             else if (arg == "--points_after_fold") cfg.points_after_fold = atoi(val.c_str());
+            else if (arg == "--stag_window") cfg.stag_window = atoi(val.c_str());
+            else if (arg == "--stag_ratio") cfg.stag_ratio = atof(val.c_str());
             else if (arg == "--output") cfg.output = val;
             else if (arg == "--restart") cfg.restart = val;
             else if (arg == "--gmres_restart") cfg.gmres_restart = atoi(val.c_str());
@@ -132,7 +140,7 @@ static solver::OscillonParams makeOscillonParams(const Config& cfg) {
     p.N_t = cfg.N_t;
     p.N_nuc = cfg.N_nuc;
     p.N_shell = cfg.N_shell;
-    p.rho_mid = 0.5;
+    p.rho_mid = cfg.rho_mid;
     p.N_theta = cfg.N_theta;
     p.Delta = cfg.Delta;
     p.Lambda = cfg.Lambda;
@@ -159,8 +167,8 @@ static solver::NewtonParams makeNewtonParams(const Config& cfg) {
         np.use_lapack = true;
     }
     np.verbose = cfg.verbose;
-    np.stag_window = 3;
-    np.stag_ratio = 0.99;
+    np.stag_window = cfg.stag_window;
+    np.stag_ratio = cfg.stag_ratio;
     return np;
 }
 
@@ -174,7 +182,7 @@ static int runBranch(const Config& cfg) {
     solver::ContinuationParams cont;
     cont.eps_start = cfg.eps_start;
     cont.dw_initial = cfg.dw_initial;
-    cont.dw_min = 1e-5;
+    cont.dw_min = cfg.dw_min;
     cont.dw_max = 0.1;
     cont.w_max = cfg.w_max;
     cont.residual_max = cfg.residual_max;
